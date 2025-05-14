@@ -3,7 +3,7 @@ import axios from 'axios';
 import './App.css';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { db } from './firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 function parseJwt(token) {
   try {
@@ -22,20 +22,25 @@ function parseJwt(token) {
 }
 
 function App() {
+  const [notesList, setNotesList] = useState([]);
   const [user, setUser] = useState(null);
   const [note, setNote] = useState('');
   const [summary, setSummary] = useState('');
 
-  const handleLoginSuccess = (resp) => {
-    console.log('Google login successful:', resp);
+  const handleLoginSuccess = async (resp) => {
     const tok = resp.credential;
     if (tok) {
       const userObj = parseJwt(tok);
-      console.log('Decoded user:', userObj);
-      setUser({
-        ...userObj, // Store the user data, including the token (credential)
-        credential: tok, // Store the token (Google ID token) here
+      const fullUser = { ...userObj, credential: tok };
+      setUser(fullUser);
+
+      const q = query(collection(db, 'notes'), where('userId', '==', userObj.sub));
+      const querySnapshot = await getDocs(q);
+      const fetchedNotes = [];
+      querySnapshot.forEach((doc) => {
+        fetchedNotes.push(doc.data());
       });
+      setNotesList(fetchedNotes);
     } else {
       console.error('No credential in response');
     }
@@ -46,62 +51,102 @@ function App() {
   };
 
   const handleSubmit = async () => {
+    if (note.trim().length < 5) {
+      alert('Please enter a valid note!');
+      return;
+    }
+
     try {
       if (user) {
-        const res = await axios.post("http://127.0.0.1:8000/process-note", {
-          token: user.credential, // Sending the token (credential from Google OAuth)
+        const res = await axios.post('http://127.0.0.1:8000/process-note', {
+          token: user.credential,
           text: note,
         });
-        setSummary(res.data.summary);
 
-        // Save to Firestore
-        await addDoc(collection(db, "notes"), {
+        const resultSummary = res.data.summary?.summary_text || res.data.summary;
+        setSummary(resultSummary);
+
+        await addDoc(collection(db, 'notes'), {
           userId: user.sub,
           text: note,
-          summary: res.data.summary,
+          summary: resultSummary,
           timestamp: new Date(),
         });
       } else {
-        console.error("User not logged in");
+        console.error('User not logged in');
       }
     } catch (error) {
-      console.error("Error submitting note:", error);
+      console.error('Error submitting note:', error);
     }
   };
 
   return (
-    <GoogleOAuthProvider clientId="23789837941-nber5iabsr4cvr2a5bui9cjp8aq6icie.apps.googleusercontent.com">
-      <div className="App">
-        <h1>AI Notes Buddy</h1>
-
-        {user ? (
-          <div>
-            <h2>Welcome, {user.name}!</h2>
-            <p>Email: {user.email}</p>
-
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Write your note here"
-              rows={6}
-              cols={60}
-            />
-            <br />
-            <button onClick={handleSubmit}>Submit Note</button>
-
-            {summary && (
-              <div>
-                <h3>Summary:</h3>
-                <p>{summary}</p>
-              </div>
-            )}
+    <GoogleOAuthProvider clientId="23789837941-od2kghqa1c17jlqug3vflrh475gq6qmh.apps.googleusercontent.com">
+      <div className="min-vh-100 bg-light d-flex flex-column justify-content-center align-items-center">
+        
+          <div className="mb-4 text-center">
+            <h1 className="display-5 fw-bold">AI Notes Buddy</h1>
           </div>
-        ) : (
-          <GoogleLogin
-            onSuccess={handleLoginSuccess}
-            onError={handleLoginFailure}
-          />
-        )}
+
+          {user ? (
+            <div className="row w-100">
+              {/* Left column: Notes list */}
+              <div className="col-md-4 d-flex flex-column align-items-start">
+                <div className="card shadow p-5 fs-5" style={{ minHeight: '500px', overflowY: 'auto' }}>
+                  <h5>Your Notes</h5>
+                  <ul className="list-group">
+                    {notesList.map((item, idx) => (
+                      <li
+                        className="list-group-item list-group-item-action"
+                        key={idx}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                          setNote(item.text);        // Show full note in textarea
+                          setSummary(item.summary);  // Show its summary
+                        }}
+                      >
+                        {item.text.split(' ').slice(0, 5).join(' ')}...
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Right column: input and user info */}
+              <div className="col-md-8">
+                <div className="card shadow p-4">
+                  <h4>Welcome, {user.name || 'User'}!</h4>
+                  <p>Email: {user.email}</p>
+
+                  <div className="mb-3">
+                    <textarea
+                      className="form-control"
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Write your note here"
+                      rows={6}
+                    />
+                    {summary && (
+                      <div className="alert alert-secondary mt-4 fs-5 p-4">
+                        <strong>Summary:</strong> {summary}
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* Larger submit button */}
+                  <button className="btn btn-primary btn-lg w-100" onClick={handleSubmit}>
+                    Submit Note
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="d-flex justify-content-center">
+              <GoogleLogin onSuccess={handleLoginSuccess} onError={handleLoginFailure} />
+            </div>
+          )}
+        
       </div>
     </GoogleOAuthProvider>
   );
