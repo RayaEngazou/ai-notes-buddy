@@ -27,6 +27,15 @@ function App() {
   const [note, setNote] = useState('');
   const [summary, setSummary] = useState('');
 
+  const handleSignOut = () => {
+  window.google.accounts.id.disableAutoSelect(); // Optional
+  localStorage.removeItem("token");
+  setUser(null);
+  window.location.reload();
+};
+
+
+
   const handleLoginSuccess = async (resp) => {
     const tok = resp.credential;
     if (tok) {
@@ -81,75 +90,125 @@ function App() {
   };
 
   return (
-    <GoogleOAuthProvider clientId="23789837941-od2kghqa1c17jlqug3vflrh475gq6qmh.apps.googleusercontent.com">
-      <div className="min-vh-100 bg-light d-flex flex-column justify-content-center align-items-center">
-        
-          <div className="mb-4 text-center">
-            <h1 className="display-5 fw-bold">AI Notes Buddy</h1>
+    <GoogleOAuthProvider clientId="23789837941-nber5iabsr4cvr2a5bui9cjp8aq6icie.apps.googleusercontent.com">
+  <div className="min-vh-100" style={{ 
+    position: 'relative',
+    overflow: 'hidden'
+  }}>
+    {/* Animated Gradient Background */}
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
+      backgroundSize: '400% 400%',
+      animation: 'gradient 15s ease infinite',
+      zIndex: 0
+    }}></div>
+
+    {/* Content Container */}
+    <div style={{ position: 'relative', zIndex: 1 }}>
+      <div className="container-fluid py-5">
+        <div className="row justify-content-center">
+          <div className="col-12 text-center">
+            <h1 className="display-4 fw-bold" style={{ color: 'black', textShadow: '2px 2px 4px rgba(255,255,255,0.5)' }}>AI Notes Buddy</h1>
           </div>
+        </div>
 
-          {user ? (
-            <div className="row w-100">
-              {/* Left column: Notes list */}
-              <div className="col-md-4 d-flex flex-column align-items-start">
-                <div className="card shadow p-5 fs-5" style={{ minHeight: '500px', overflowY: 'auto' }}>
-                  <h5>Your Notes</h5>
-                  <ul className="list-group">
-                    {notesList.map((item, idx) => (
-                      <li
-                        className="list-group-item list-group-item-action"
-                        key={idx}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => {
-                          setNote(item.text);        // Show full note in textarea
-                          setSummary(item.summary);  // Show its summary
-                        }}
-                      >
-                        {item.text.split(' ').slice(0, 5).join(' ')}...
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+        {user ? (
+          <div className="row justify-content-center">
+            {/* Left column: Notes list */}
+            <div className="col-md-4 mb-4 mb-md-0">
+              <div className="card shadow p-3 fs-5 h-100" style={{ 
+                maxHeight: '400px', 
+                overflowY: 'auto',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)' 
+              }}>
+                <h5>Your Notes</h5>
+                <ul className="list-group">
+                  {notesList.map((item, idx) => (
+                    <li
+                      className="list-group-item list-group-item-action"
+                      key={idx}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        setNote(item.text);
+                        setSummary(item.summary);
+                      }}
+                    >
+                      {item.text.split(' ').slice(0, 5).join(' ')}...
+                    </li>
+                  ))}
+                </ul>
               </div>
+            </div>
 
-              {/* Right column: input and user info */}
-              <div className="col-md-8">
-                <div className="card shadow p-4">
+            {/* Right column: input and user info */}
+            <div className="col-md-8">
+              <div className="card shadow p-4 h-100" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+                <div className="d-flex justify-content-between align-items-center mb-3">
                   <h4>Welcome, {user.name || 'User'}!</h4>
-                  <p>Email: {user.email}</p>
-
-                  <div className="mb-3">
-                    <textarea
-                      className="form-control"
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="Write your note here"
-                      rows={6}
-                    />
-                    {summary && (
-                      <div className="alert alert-secondary mt-4 fs-5 p-4">
-                        <strong>Summary:</strong> {summary}
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Larger submit button */}
-                  <button className="btn btn-primary btn-lg w-100" onClick={handleSubmit}>
-                    Submit Note
+                  <button
+                    className="btn btn-danger"
+                    onClick={handleSignOut}
+                    style={{ minWidth: '90px' }}
+                  >
+                    Sign Out
                   </button>
                 </div>
+                <p>Email: {user.email}</p>
+
+                <div className="mb-3">
+                  <textarea
+                    className="form-control"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Write your note here"
+                    rows={6}
+                  />
+                  {summary && (
+                    <div className="alert alert-secondary mt-4 fs-5 p-4">
+                      <strong>Summary:</strong> {summary}
+                    </div>
+                  )}
+                </div>
+
+                <button className="btn btn-primary btn-lg w-100 fs-5" onClick={handleSubmit}>
+                  Submit Note
+                </button>
               </div>
             </div>
-          ) : (
-            <div className="d-flex justify-content-center">
-              <GoogleLogin onSuccess={handleLoginSuccess} onError={handleLoginFailure} />
+          </div>
+        ) : (
+          <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '70vh' }}>
+            <div className="p-4 border rounded bg-white shadow" style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+              <GoogleLogin
+                onSuccess={handleLoginSuccess}
+                onError={handleLoginFailure}
+                theme="filled_blue"
+                size="large"
+                width="300"
+              />
             </div>
-          )}
-        
+          </div>
+        )}
       </div>
-    </GoogleOAuthProvider>
-  );
+    </div>
+
+    {/* Add this to your CSS file */}
+    <style>
+      {`
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}
+    </style>
+  </div>
+</GoogleOAuthProvider>  );
 }
 
 export default App;

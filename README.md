@@ -12,7 +12,7 @@ AI Notes Buddy is a full-stack web application that lets users log in with their
 ## ⚙️ Features
 
 - 🔐 Google OAuth login (secure authentication)
-- 🧠 Summarize text using a local LLM (LLaMA 3)
+- 🧠 Summarize text using a local LLM (tinyllama)
 - 🌈 Modern UI built with React + Vite
 - 🐳 Fully Dockerized for simple local development
 
@@ -24,7 +24,7 @@ AI Notes Buddy is a full-stack web application that lets users log in with their
 |--------------|---------------------------|
 | Frontend     | React, Vite, Tailwind CSS |
 | Backend      | FastAPI                   |
-| AI           | Ollama (LLaMA 3)          |
+| AI           | Ollama (tinyllama)          |
 | Auth         | Google OAuth 2.0          |
 | Deployment   | Docker, Docker Compose    |
 

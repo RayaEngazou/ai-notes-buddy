@@ -1,4 +1,3 @@
-
 services:
   frontend:
     build: ./frontend
@@ -9,3 +8,5 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
